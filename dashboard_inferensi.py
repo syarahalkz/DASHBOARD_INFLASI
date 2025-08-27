@@ -3,6 +3,7 @@ from src.preprocessing import preprocess_and_update_histori
 from src.inference import predict_inflasi
 import pandas as pd
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 # Load fitur training yang sudah lengkap dan urut
 with open('data/features_training.txt') as f:
@@ -50,4 +51,31 @@ if st.button("Prediksi Inflasi"):
     tahun_pred = tahun + 1 if bulan_index == 11 else tahun  # tambah tahun jika Desember
 
     st.success(f"📌 Prediksi Inflasi untuk **{bulan_pred} {tahun_pred}** adalah: **{prediksi:.2f}%**")
+
+if st.button("Tampilkan Feature Importance"):
+    # Load model
+    model = xgb.Booster()
+    model.load_model(model_path)
+
+    # Ambil feature importance
+    importance = model.get_score(importance_type='weight')  
+    # opsi: 'weight', 'gain', 'cover'
+
+    # Ubah ke DataFrame
+    importance_df = pd.DataFrame({
+        'Fitur': list(importance.keys()),
+        'Skor': list(importance.values())
+    }).sort_values(by='Skor', ascending=False)
+
+    # Tampilkan tabel
+    st.subheader("📊 Feature Importance")
+    st.dataframe(importance_df)
+
+    # Plot grafik
+    fig, ax = plt.subplots()
+    ax.barh(importance_df['Fitur'], importance_df['Skor'])
+    ax.set_xlabel("Importance Score")
+    ax.set_ylabel("Feature")
+    ax.set_title("Feature Importance XGBoost")
+    st.pyplot(fig)
 
